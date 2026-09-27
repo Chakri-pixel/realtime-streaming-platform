@@ -1,0 +1,5 @@
+# Local dev: install every component (Spark tests need Java 17+)
+-r generator/requirements.txt
+-r streaming/requirements.txt
+-r dashboard/requirements.txt
+pytest

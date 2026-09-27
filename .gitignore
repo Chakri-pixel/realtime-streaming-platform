@@ -1,0 +1,21 @@
+# Runtime data (lake, checkpoints, serving JSON) -- generated locally
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log

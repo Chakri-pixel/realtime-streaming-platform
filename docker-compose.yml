@@ -1,0 +1,72 @@
+name: realtime-clickstream-platform
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.1
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --overprovisioned
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"    # host access to Kafka API
+      - "9644:9644"    # admin API
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+
+  console:
+    image: redpandadata/console:v2.8.2
+    container_name: redpanda-console
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    depends_on:
+      - redpanda
+
+  generator:
+    build: ./generator
+    container_name: clickstream-generator
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:29092
+      TOPIC: clickstream-events
+      EVENT_RATE: 40
+    depends_on:
+      - redpanda
+
+  spark-job:
+    build: ./streaming
+    container_name: clickstream-spark
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:29092
+      TOPIC: clickstream-events
+      SERVING_DIR: /opt/app/data/serving
+      LAKE_DIR: /opt/app/data/lake
+      CHECKPOINT_DIR: /opt/app/data/checkpoints
+    volumes:
+      - ./data:/opt/app/data
+    depends_on:
+      - redpanda
+      - generator
+
+  dashboard:
+    build: ./dashboard
+    container_name: clickstream-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      SERVING_DIR: /opt/app/data/serving
+      DASHBOARD_REFRESH_SEC: 5
+    volumes:
+      - ./data:/opt/app/data
+    depends_on:
+      - spark-job
+
+volumes:
+  redpanda-data:
